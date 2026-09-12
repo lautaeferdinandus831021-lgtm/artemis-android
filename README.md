@@ -104,6 +104,16 @@ cd artemis
 
 > **Tip**: Opens `http://localhost:8000` in your default browser with a device connection wizard, live screen mirroring, prompt sandbox, and execution replays. You can also run directly from CLI: `uv run artemis run "Open Settings, find Battery and tell me current level" --profile flash`.
 
+### Download the Android helper app (APK)
+
+Artemis ships a small companion app, **ArtemisAccessibilityHelper** (< 30 KB, `com.artemis.helper`), that gives the agent fast, stable on-device screen reading through an accessibility service. It installs automatically via `artemis helper install` when a device is attached, but you can also install it by hand:
+
+1. Grab the latest signed APK from the CI build: open the repo's **Actions → CI → “Build Android helper APK”** run and download the **`ArtemisAccessibilityHelper-apk`** artifact (tagged builds also attach it to the GitHub Release).
+2. Unzip the artifact, copy `ArtemisAccessibilityHelper.apk` to the device, and open it to install (allow *Install unknown apps* if prompted).
+3. Enable **Settings → Accessibility → Artemis Helper** so the service can read the screen.
+
+> The APK is signed with the project's persistent debug key; every CI build regenerates it from `packages/artemis-accessibility-helper` (see `build_apk.sh`).
+
 <a id="mcp-setup"></a>
 <a id="mcp"></a>
 <details>

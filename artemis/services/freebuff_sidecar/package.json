@@ -1,0 +1,16 @@
+{
+  "name": "freebuff_sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node sidecar for the Freebuff (codebuff.com) SDK bridge used by Artemis.",
+  "main": "smoke.mjs",
+  "scripts": {
+    "smoke": "node smoke.mjs"
+  },
+  "keywords": [],
+  "author": "Artemis contributors",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@codebuff/sdk": "^0.10.7"
+  }
+}

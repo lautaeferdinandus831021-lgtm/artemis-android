@@ -76,7 +76,7 @@ dmypy.json
 .settings/
 
 # Node & Frontend (Showcase UI)
-apps/showcase_ui/node_modules/
+node_modules/
 apps/showcase_ui/.angular/
 apps/showcase_ui/.angular/cache/
 .npm/

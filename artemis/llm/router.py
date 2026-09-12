@@ -234,6 +234,13 @@ class ModelFactory:
                 or (settings.GOOGLE_API_KEY.get_secret_value() if settings.GOOGLE_API_KEY else None)
                 or os.environ.get("GOOGLE_API_KEY")
                 or os.environ.get("GEMINI_API_KEY")
+                # Freebuff platform key as last-resort default credential.
+                or (
+                    settings.FREEBUFF_API_KEY.get_secret_value()
+                    if settings.FREEBUFF_API_KEY
+                    else None
+                )
+                or os.environ.get("FREEBUFF_API_KEY")
             )
             # Gemini 1.x/2.x only understand thinking_budget.
             thinking_level = (

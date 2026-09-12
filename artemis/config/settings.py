@@ -100,6 +100,9 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: SecretStr | None = None
     XAI_API_KEY: SecretStr | None = None
     OPEN_ROUTER_API_KEY: SecretStr | None = None
+    # Freebuff platform credential: last-resort default for any LLM provider
+    # above that has no provider-specific key configured.
+    FREEBUFF_API_KEY: SecretStr | None = None
 
     # Google Cloud Vision OCR Authentication
     OCR_API_KEY: SecretStr | None = None
@@ -167,6 +170,7 @@ class Settings(BaseSettings):
             "OCR_API_KEY",
             "VISION_API_KEY",
             "API_KEY",
+            "FREEBUFF_API_KEY",
         ):
             val = getattr(self, attr, None)
             if val and is_placeholder_key(val):
@@ -177,6 +181,19 @@ class Settings(BaseSettings):
                 self.GOOGLE_API_KEY = self.GEMINI_API_KEY
             elif self.GCP_API_KEY:
                 self.GOOGLE_API_KEY = self.GCP_API_KEY
+
+        # Freebuff platform key is the default credential: any LLM provider
+        # without a provider-specific key falls back to it.  This comes last
+        # so dedicated provider keys (including GEMINI/GCP aliases) always
+        # win when present.
+        freebuff = self.FREEBUFF_API_KEY
+        if freebuff:
+            self.GOOGLE_API_KEY = self.GOOGLE_API_KEY or freebuff
+            self.GEMINI_API_KEY = self.GEMINI_API_KEY or freebuff
+            self.OPENAI_API_KEY = self.OPENAI_API_KEY or freebuff
+            self.ANTHROPIC_API_KEY = self.ANTHROPIC_API_KEY or freebuff
+            self.OPEN_ROUTER_API_KEY = self.OPEN_ROUTER_API_KEY or freebuff
+            self.XAI_API_KEY = self.XAI_API_KEY or freebuff
 
         # Fallback for OCR & Vision API keys
         if not self.OCR_API_KEY and self.VISION_API_KEY:
@@ -208,6 +225,11 @@ class Settings(BaseSettings):
             key = self.OPEN_ROUTER_API_KEY
         elif provider_lower in ("xai", "grok"):
             key = self.XAI_API_KEY
+
+        # Freebuff platform key as last-resort default credential for LLM
+        # providers (OCR/Vision keep their dedicated credential chain).
+        if not key and provider_lower not in ("ocr", "vision", "google_vision"):
+            key = self.FREEBUFF_API_KEY
 
         if key and not is_placeholder_key(key):
             return key

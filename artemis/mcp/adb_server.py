@@ -39,6 +39,51 @@ except Exception as exc:  # pylint: disable=broad-exception-caught
     # Best-effort compatibility shim for FastMCP/pydantic version drift.
     logger.debug("FastMCP Settings model_rebuild skipped: %s", exc, exc_info=True)
 
+
+def _dedent_tool_docstrings() -> None:
+    """Restore dedented tool descriptions under FastMCP docstring drift.
+
+    Some ``mcp`` releases pass the raw ``__doc__`` to ``Tool.from_function``,
+    so tool descriptions reach external MCP clients carrying the module-level
+    indentation of the ``@mcp.tool()`` body.  Patch ``Tool.from_function`` to
+    always hand FastMCP a dedented description.
+    """
+    import inspect
+
+    from mcp.server.fastmcp.tools.base import Tool
+
+    original_from_function = Tool.from_function.__func__  # type: ignore[attr-defined]
+
+    @classmethod  # type: ignore[misc]
+    def _dedented_from_function(
+        cls,
+        fn,
+        name: str | None = None,
+        **kwargs: object,
+    ):
+        description = kwargs.get("description")
+        if description is None:
+            raw_doc = getattr(fn, "__doc__", None)
+            if raw_doc:
+                # ``inspect.cleandoc`` strips the leading newline and the
+                # common indentation.  Older mcp releases kept a single
+                # trailing newline for multi-line descriptions (and none for
+                # single-line ones); the pinned contract fixtures expect that
+                # shape, so mirror it here.
+                cleaned = inspect.cleandoc(raw_doc).rstrip()
+                if "\n" in cleaned:
+                    cleaned += "\n"
+                kwargs["description"] = cleaned
+        return original_from_function(cls, fn, name=name, **kwargs)
+
+    Tool.from_function = _dedented_from_function  # type: ignore[method-assign]
+
+
+try:
+    _dedent_tool_docstrings()
+except Exception as exc:  # pylint: disable=broad-exception-caught
+    logger.debug("FastMCP docstring dedent shim skipped: %s", exc, exc_info=True)
+
 from artemis.clients.screen_client_factory import create_screen_client
 from artemis.context import ArtemisContext, DeviceContext, DevicePlatform
 from artemis.controllers.unified_controller import UnifiedMobileController

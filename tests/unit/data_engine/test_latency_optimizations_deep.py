@@ -240,8 +240,18 @@ async def test_perception_node_async_offloading(mock_artemis_ctx, tmp_path):
     # Verify injected_instruction.json was unlinked
     assert not instruction_file.exists()
 
-    # Await background tasks triggered by perception_node
-    await asyncio.sleep(0.1)
+    # Await background tasks triggered by perception_node.  Wait on the
+    # outcome (image persisted) instead of a fixed sleep so the test stays
+    # deterministic under scheduler jitter; the gather afterwards keeps any
+    # other pending work from leaking between tests.
+    deadline = asyncio.get_running_loop().time() + 10.0
+    while not engine.get_image_path(expected_hash).exists():
+        if engine.has_pending_operations() and engine._pending_tasks:
+            await asyncio.wait(engine._pending_tasks, timeout=0.5)
+        elif asyncio.get_running_loop().time() > deadline:
+            break
+        else:
+            await asyncio.sleep(0.01)
     if engine._pending_tasks:
         await asyncio.gather(*engine._pending_tasks)
 

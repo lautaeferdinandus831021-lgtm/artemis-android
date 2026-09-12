@@ -117,11 +117,13 @@ def test_mcp_stdio_handshake_immediate_input():
         p.stdin.write(json.dumps(init_req).encode("utf-8") + b"\n")
         p.stdin.flush()
 
-        # Read initialize response with a strict timeout
-        init_resp_line = _readline_with_timeout(p.stdout, 6.0)
+        # Read initialize response with a strict timeout. A real deadlock
+        # never responds at all, so a generous budget still catches it while
+        # tolerating slow cold starts (heavy import chain on slow machines).
+        init_resp_line = _readline_with_timeout(p.stdout, 30.0)
 
         assert init_resp_line is not None, (
-            "MCP server failed to respond to initialize request within 6 seconds (deadlock detected)!"
+            "MCP server failed to respond to initialize request within 30 seconds (deadlock detected)!"
         )
         init_data = json.loads(init_resp_line)
         assert init_data.get("id") == 1

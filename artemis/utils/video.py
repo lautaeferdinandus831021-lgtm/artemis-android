@@ -614,10 +614,14 @@ async def render_timeline_clip(
                 f"setsar=1,fps={fps},format=yuv420p[{label}]"
             )
         labels.append(f"[{label}]")
+    # Enforce constant output frame rate after concat: some ffmpeg builds
+    # (e.g. the aarch64 imageio-ffmpeg binary) otherwise hand the muxer an
+    # unset/odd timebase and the encoded clip drifts off the recording
+    # timeline, which breaks frame-offset timestamping downstream.
     if len(labels) == 1:
-        filter_parts.append(f"{labels[0]}null[outv]")
+        filter_parts.append(f"{labels[0]}null,fps={fps}[outv]")
     else:
-        filter_parts.append(f"{''.join(labels)}concat=n={len(labels)}:v=1:a=0[outv]")
+        filter_parts.append(f"{''.join(labels)}concat=n={len(labels)}:v=1:a=0,fps={fps}[outv]")
 
     command.extend(
         [
@@ -625,6 +629,8 @@ async def render_timeline_clip(
             ";".join(filter_parts),
             "-map",
             "[outv]",
+            "-r",
+            str(fps),
             "-c:v",
             "libx264",
             "-preset",

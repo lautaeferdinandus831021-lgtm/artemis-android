@@ -19,11 +19,31 @@ integration and end-to-end trees remain directly runnable, and receive stable
 markers here so callers can select them without relying on filename patterns.
 """
 
+import os
 from pathlib import Path
 
 import pytest
 
-from artemis.drivers.mock.mock_driver import MockDeviceDriver
+# The deterministic suite must run without model credentials
+# (CONTRIBUTING.md).  Some unit modules build their LLM eagerly at import or
+# construction time, which pydantic rejects when every provider key is empty,
+# before a test can inject its own mock.  Seed non-placeholder dummy keys so
+# model objects construct successfully; every LLM interaction in the suite is
+# mocked, so no real provider is ever contacted.
+for _key in (
+    "GOOGLE_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "OPEN_ROUTER_API_KEY",
+    "XAI_API_KEY",
+):
+    # Environments commonly export these as empty strings; treat that as
+    # unset so the suite never trips provider-side key validation.
+    if not os.environ.get(_key):
+        os.environ[_key] = "test-dummy-key"
+
+from artemis.drivers.mock.mock_driver import MockDeviceDriver  # noqa: E402
 
 
 @pytest.fixture

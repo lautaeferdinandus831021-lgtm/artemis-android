@@ -168,12 +168,14 @@ def verify(
 ):
     """Verify credentials only (no session/quota fetch)."""
 
+    import httpx
+
     from artemis.services.freebuff import verify_connection
 
     credentials = _load_credentials_or_exit(path)
     try:
         status_obj = verify_connection(credentials, timeout=timeout, fetch_session=False)
-    except Exception as exc:  # pragma: no cover - network errors are caught below
+    except httpx.HTTPError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
